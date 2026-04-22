@@ -9,6 +9,12 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 import datetime
 import config
 
+# [TR] Her zaman Türkiye Saatini (UTC+3) döndüren yardımcı fonksiyon
+# [EN] Helper function that always returns Turkey Time (UTC+3)
+def get_tr_time():
+    # Render'da çalışınca UTC dönüyor, bunu 3 saat ileri alarak Türkiye saati yapıyoruz.
+    return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) + datetime.timedelta(hours=3)
+
 Base = declarative_base()
 
 class Product(Base):
@@ -83,7 +89,7 @@ def add_product(code, name, url, base_price, image_url=None):
                 url=url, 
                 image_url=image_url,
                 base_price=base_price, 
-                first_seen=datetime.datetime.now()
+                first_seen=get_tr_time()
             )
             session.add(new_prod)
             session.commit()
@@ -111,7 +117,7 @@ def add_price_history(code, price, in_stock):
             code=code,
             price=price,
             in_stock=in_stock,
-            timestamp=datetime.datetime.now()
+            timestamp=get_tr_time()
         )
         session.add(new_history)
         session.commit()
@@ -121,10 +127,10 @@ def update_last_scan():
     with SessionLocal() as session:
         status = session.query(SystemStatus).first()
         if not status:
-            status = SystemStatus(id=1, last_scan=datetime.datetime.now())
+            status = SystemStatus(id=1, last_scan=get_tr_time())
             session.add(status)
         else:
-            status.last_scan = datetime.datetime.now()
+            status.last_scan = get_tr_time()
         session.commit()
 
 def get_last_scan():

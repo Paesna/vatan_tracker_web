@@ -4,6 +4,7 @@
 """
 
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 import pandas as pd
 import plotly.express as px
 from sqlalchemy import create_engine
@@ -15,6 +16,9 @@ st.set_page_config(page_title="Vatan RAM Tracker", page_icon="📈", layout="wid
 
 st.title("🖥️ Vatan RAM Fiyat Takip Paneli")
 st.markdown("[TR] Veritabanına kaydedilen RAM fiyatlarının zamana göre değişim grafikleri. / [EN] Time-based charts of RAM prices saved in the database.")
+
+# [TR] Sayfayı her 60 saniyede bir otomatik yenile / [EN] Auto-refresh page every 60 seconds
+count = st_autorefresh(interval=60000, key="datarefresh")
 
 # [TR] Veritabanı bağlantısı / [EN] Database connection
 @st.cache_resource
