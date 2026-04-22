@@ -11,3 +11,4 @@ env/
 
 # Ignore local test scripts
 test_bildirim.py
+test_scraper.py
