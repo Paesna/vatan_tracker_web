@@ -62,11 +62,10 @@ if engine:
             st.warning("[TR] Veritabanında henüz ürün bulunmuyor. Lütfen botun çalışmasını bekleyin. / [EN] No products in the database yet. Please wait for the bot to run.")
         else:
             # [TR] ARAMA VE SIRALAMA BARI / [EN] SEARCH AND SORT BAR
-            scol1, scol2, scol3, scol4 = st.columns([2, 1, 1, 1])
+            scol1, scol2, scol3 = st.columns([2, 1, 1])
             search_query = scol1.text_input("🔍 Ürün Ara / Search Product", "")
             sort_option = scol2.selectbox("⇅ Sırala / Sort by", ["Fiyat (Artan) / Price (Asc)", "Fiyat (Azalan) / Price (Desc)"])
-            time_range = scol3.selectbox("⏳ Tarih / Time", ["Son 1 Gün", "Son 1 Hafta", "Son 1 Ay", "Tümü"])
-            show_in_stock = scol4.checkbox("📦 Sadece Stoktakiler", value=False)
+            show_in_stock = scol3.checkbox("📦 Sadece Stoktakiler", value=False)
             
             # [TR] Tüm ürünlerin son fiyatlarını ve stok durumlarını çekmek için genel bir history sorgusu / [EN] Query all histories to get current prices
             products_df, history_df = get_dashboard_data()
@@ -75,15 +74,7 @@ if engine:
                 st.warning("[TR] Veritabanında henüz ürün bulunmuyor. Lütfen botun çalışmasını bekleyin. / [EN] No products in the database yet. Please wait for the bot to run.")
                 st.stop()
             
-            # [TR] Grafik için zaman filtresi / [EN] Time filter for charts
-            chart_history_df = history_df.copy()
-            now = pd.Timestamp.now()
-            if time_range == "Son 1 Gün":
-                chart_history_df = chart_history_df[chart_history_df['timestamp'] >= now - pd.Timedelta(days=1)]
-            elif time_range == "Son 1 Hafta":
-                chart_history_df = chart_history_df[chart_history_df['timestamp'] >= now - pd.Timedelta(days=7)]
-            elif time_range == "Son 1 Ay":
-                chart_history_df = chart_history_df[chart_history_df['timestamp'] >= now - pd.Timedelta(days=30)]
+            # [TR] Her ürün için en güncel fiyatı bul / [EN] Find the most recent price for each product
             latest_prices = history_df.drop_duplicates(subset=['code'], keep='last')
             
             # [TR] products_df ile latest_prices tablosunu birleştir / [EN] Merge products with their latest prices
@@ -138,7 +129,7 @@ if engine:
                         
                         # [TR] Grafiği Gör Expander'ı / [EN] View Chart Expander
                         with st.expander("📉 Grafiği Gör / View Chart"):
-                            prod_history = chart_history_df[chart_history_df['code'] == row['code']].copy()
+                            prod_history = history_df[history_df['code'] == row['code']].copy()
                             if prod_history.empty:
                                 st.info("Henüz geçmiş yok / No history yet")
                             else:
@@ -149,11 +140,29 @@ if engine:
                                               hover_data=["Stok Durumu"])
                                 # [TR] Kırmızı baz çizgisini kaldırdık / [EN] Removed red base line
                                 
-                                # [TR] Sadece margin ve eksen isimleri
+                                # [TR] X ekseni için gün/hafta/ay seçicilerini ekle (Tümü kaldırıldı) ve varsayılan olarak son 1 günü göster
+                                
+                                # Varsayılan olarak son 1 günü göster / Show last 1 day by default
+                                last_day = pd.Timestamp.now() - pd.Timedelta(days=1)
+                                
                                 fig.update_layout(
                                     margin=dict(l=0, r=0, t=30, b=60), 
                                     height=350,
-                                    xaxis=dict(type="date")
+                                    xaxis=dict(
+                                        range=[last_day, pd.Timestamp.now()],
+                                        rangeselector=dict(
+                                            buttons=list([
+                                                dict(count=1, label="1 Gün", step="day", stepmode="backward"),
+                                                dict(count=7, label="1 Hafta", step="day", stepmode="backward"),
+                                                dict(count=1, label="1 Ay", step="month", stepmode="backward")
+                                            ]),
+                                            y=-0.3,
+                                            x=0.5,
+                                            xanchor="center",
+                                            yanchor="top"
+                                        ),
+                                        type="date"
+                                    )
                                 )
                                 # [TR] Mobildeki zoom alet çantası (Modebar) ve fare tekerleğiyle zoom (scrollZoom) aktif edildi.
                                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': True, 'scrollZoom': True}, key=f"chart_{row['code']}")
