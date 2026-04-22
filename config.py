@@ -12,7 +12,7 @@ load_dotenv()
 # --- AYARLAR / SETTINGS ---
 HEDEF_FIYAT = float(os.getenv("HEDEF_FIYAT", 20000.0))
 INDIRIM_YUZDESI = float(os.getenv("INDIRIM_YUZDESI", 15.0))
-KONTROL_SIKLIGI_SANIYE = int(os.getenv("KONTROL_SIKLIGI_SANIYE", 10 * 60))
+KONTROL_SIKLIGI_SANIYE = int(os.getenv("KONTROL_SIKLIGI_SANIYE", 30))
 
 # --- TELEGRAM AYARLARI / TELEGRAM SETTINGS ---
 # [TR] Bulut sistemine yüklerken GitHub'da şifrenin görünmemesi için bunları sitenin (Render vb.) "Environment Variables" bölümüne yazacaksın.
