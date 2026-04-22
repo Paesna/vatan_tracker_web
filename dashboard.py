@@ -17,8 +17,8 @@ st.set_page_config(page_title="Vatan RAM Tracker", page_icon="📈", layout="wid
 st.title("🖥️ Vatan RAM Fiyat Takip Paneli")
 st.markdown("[TR] Veritabanına kaydedilen RAM fiyatlarının zamana göre değişim grafikleri. / [EN] Time-based charts of RAM prices saved in the database.")
 
-# [TR] Sayfayı her 60 saniyede bir otomatik yenile / [EN] Auto-refresh page every 60 seconds
-count = st_autorefresh(interval=60000, key="datarefresh")
+# [TR] Sayfayı her 30 saniyede bir otomatik yenile / [EN] Auto-refresh page every 30 seconds
+count = st_autorefresh(interval=30000, key="datarefresh")
 
 # [TR] Veritabanı bağlantısı / [EN] Database connection
 @st.cache_resource
@@ -28,6 +28,17 @@ def init_connection():
     except Exception as e:
         st.error(f"[TR] Veritabanına bağlanılamadı. Lütfen config.py içindeki DB_URL'yi kontrol edin. / [EN] Could not connect to database. Please check DB_URL in config.py. Hata/Error: {e}")
         return None
+
+# [TR] Verileri cacheleyerek sitenin şimşek hızında açılmasını sağla / [EN] Cache data for lightning fast loads
+@st.cache_data(ttl=25)
+def get_dashboard_data():
+    engine = init_connection()
+    if not engine:
+        return pd.DataFrame(), pd.DataFrame()
+    
+    products_df = pd.read_sql("SELECT * FROM products", engine)
+    history_df = pd.read_sql("SELECT * FROM price_history ORDER BY timestamp ASC", engine)
+    return products_df, history_df
 
 engine = init_connection()
 
@@ -44,19 +55,24 @@ if engine:
             
         st.markdown("---")
         
-        # [TR] Ürünleri Çek / [EN] Fetch Products
-        products_df = pd.read_sql("SELECT * FROM products", engine)
+        # [TR] Verileri çek / [EN] Fetch data
+        products_df, _ = get_dashboard_data()
         
         if products_df.empty:
             st.warning("[TR] Veritabanında henüz ürün bulunmuyor. Lütfen botun çalışmasını bekleyin. / [EN] No products in the database yet. Please wait for the bot to run.")
         else:
             # [TR] ARAMA VE SIRALAMA BARI / [EN] SEARCH AND SORT BAR
-            scol1, scol2 = st.columns([3, 1])
+            scol1, scol2, scol3 = st.columns([2, 1, 1])
             search_query = scol1.text_input("🔍 Ürün Ara / Search Product", "")
             sort_option = scol2.selectbox("⇅ Sırala / Sort by", ["Fiyat (Artan) / Price (Asc)", "Fiyat (Azalan) / Price (Desc)"])
+            show_in_stock = scol3.checkbox("📦 Sadece Stoktakiler", value=False)
             
             # [TR] Tüm ürünlerin son fiyatlarını ve stok durumlarını çekmek için genel bir history sorgusu / [EN] Query all histories to get current prices
-            history_df = pd.read_sql("SELECT * FROM price_history ORDER BY timestamp ASC", engine)
+            products_df, history_df = get_dashboard_data()
+            
+            if products_df.empty:
+                st.warning("[TR] Veritabanında henüz ürün bulunmuyor. Lütfen botun çalışmasını bekleyin. / [EN] No products in the database yet. Please wait for the bot to run.")
+                st.stop()
             
             # [TR] Her ürün için en güncel fiyatı bul / [EN] Find the most recent price for each product
             latest_prices = history_df.drop_duplicates(subset=['code'], keep='last')
@@ -71,6 +87,10 @@ if engine:
             # [TR] Arama Filtresi / [EN] Search Filter
             if search_query:
                 merged_df = merged_df[merged_df['name'].str.contains(search_query, case=False, na=False)]
+                
+            # [TR] Stok Filtresi / [EN] Stock Filter
+            if show_in_stock:
+                merged_df = merged_df[merged_df['in_stock'] == 1]
                 
             # [TR] Sıralama / [EN] Sorting
             if sort_option == "Fiyat (Artan) / Price (Asc)":
@@ -115,12 +135,12 @@ if engine:
                             else:
                                 prod_history['Stok Durumu'] = prod_history['in_stock'].apply(lambda x: 'Var' if x == 1 else 'Yok')
                                 fig = px.line(prod_history, x='timestamp', y='price', markers=True, 
-                                              line_shape='hv',
+                                              line_shape='spline',
                                               labels={"timestamp": "Zaman", "price": "Fiyat (TL)"},
                                               hover_data=["Stok Durumu"])
                                 fig.add_hline(y=row['base_price'], line_dash="dash", line_color="red")
                                 
-                                # [TR] X ekseni için gün/hafta/ay seçicilerini ekle / [EN] Add day/week/month selectors for X axis
+                                # [TR] X ekseni için gün/hafta/ay seçicilerini ekle (Tümü kaldırıldı) / [EN] Add day/week/month selectors for X axis
                                 fig.update_layout(
                                     margin=dict(l=0, r=0, t=30, b=60), 
                                     height=350,
@@ -129,8 +149,7 @@ if engine:
                                             buttons=list([
                                                 dict(count=1, label="1 Gün", step="day", stepmode="backward"),
                                                 dict(count=7, label="1 Hafta", step="day", stepmode="backward"),
-                                                dict(count=1, label="1 Ay", step="month", stepmode="backward"),
-                                                dict(step="all", label="Tümü")
+                                                dict(count=1, label="1 Ay", step="month", stepmode="backward")
                                             ]),
                                             y=-0.3,
                                             x=0.5,
