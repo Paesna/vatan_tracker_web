@@ -1,0 +1,13 @@
+# Ignore Python cache
+__pycache__/
+*.py[cod]
+
+# Ignore environments
+venv/
+env/
+.env
+
+# Don't ignore config.py as it has been modified to use os.getenv and is safe
+
+# Ignore local test scripts
+test_bildirim.py
