@@ -1,4 +1,4 @@
-# 🚀 Vatan RAM Tracker Web (v1.0)
+# 🚀 Vatan RAM Tracker Web (v1.1)
 
 [TR] Vatan Bilgisayar'daki DDR5 RAM'lerin fiyatlarını anlık olarak takip eden, bulut veritabanına kaydeden, Streamlit Dashboard ile görselleştiren ve **Discord/Telegram** üzerinden bildirim gönderen otonom bir bottur.
 
