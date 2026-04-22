@@ -7,4 +7,4 @@ pandas==2.2.1
 plotly==5.19.0
 python-dotenv==1.0.1
 streamlit-autorefresh==1.0.1
-cloudscraper==1.2.71
+curl_cffi==0.15.0

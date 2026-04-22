@@ -5,7 +5,7 @@
 """
 
 import requests
-import cloudscraper
+from curl_cffi import requests as curl_requests
 from bs4 import BeautifulSoup
 import datetime
 import config
@@ -38,13 +38,13 @@ def ramleri_getir(url):
         dict: [TR] Ürün kodlarını detaylarıyla eşleştiren bir sözlük. / [EN] A dictionary mapping product codes (str) to their details (dict).
     """
     try:
-        # [TR] Vatan Bilgisayar bot korumalarını aşmak için cloudscraper kullanıyoruz. / [EN] Use cloudscraper to bypass bot protections.
-        scraper = cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False})
-        response = scraper.get(url, timeout=15)
+        # [TR] Vatan Bilgisayar bot korumalarını aşmak için TLS parmak izini Chrome gibi gösteren curl_cffi kullanıyoruz.
+        # [EN] Use curl_cffi to impersonate Chrome TLS fingerprint to bypass bot protections.
+        response = curl_requests.get(url, impersonate="chrome110", timeout=15)
         
         # [TR] Status code 403 ise (Yasaklı), bu hala banlandığımız anlamına gelir.
         if response.status_code == 403:
-            print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] HATA / ERROR: 403 Forbidden. IP adresiniz engellenmiş olabilir!")
+            print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] HATA / ERROR: 403 Forbidden. IP adresiniz donanımsal olarak engellenmiş olabilir!")
             return {}
             
         response.raise_for_status()
