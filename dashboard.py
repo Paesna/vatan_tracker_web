@@ -17,8 +17,8 @@ st.set_page_config(page_title="Vatan RAM Tracker", page_icon="📈", layout="wid
 st.title("🖥️ Vatan RAM Fiyat Takip Paneli")
 st.markdown("[TR] Veritabanına kaydedilen RAM fiyatlarının zamana göre değişim grafikleri. / [EN] Time-based charts of RAM prices saved in the database.")
 
-# [TR] Sayfayı her 30 saniyede bir otomatik yenile / [EN] Auto-refresh page every 30 seconds
-count = st_autorefresh(interval=30000, key="datarefresh")
+# [TR] Sayfayı her 120 saniyede bir otomatik yenile / [EN] Auto-refresh page every 120 seconds
+count = st_autorefresh(interval=120000, key="datarefresh")
 
 # [TR] Veritabanı bağlantısı / [EN] Database connection
 @st.cache_resource
@@ -30,7 +30,7 @@ def init_connection():
         return None
 
 # [TR] Verileri cacheleyerek sitenin şimşek hızında açılmasını sağla / [EN] Cache data for lightning fast loads
-@st.cache_data(ttl=25)
+@st.cache_data(ttl=110)
 def get_dashboard_data():
     engine = init_connection()
     if not engine:
@@ -140,11 +140,16 @@ if engine:
                                               hover_data=["Stok Durumu"])
                                 fig.add_hline(y=row['base_price'], line_dash="dash", line_color="red")
                                 
-                                # [TR] X ekseni için gün/hafta/ay seçicilerini ekle (Tümü kaldırıldı) / [EN] Add day/week/month selectors for X axis
+                                # [TR] X ekseni için gün/hafta/ay seçicilerini ekle (Tümü kaldırıldı) ve varsayılan olarak son 1 günü göster
+                                
+                                # Varsayılan olarak son 1 günü göster / Show last 1 day by default
+                                last_day = pd.Timestamp.now() - pd.Timedelta(days=1)
+                                
                                 fig.update_layout(
                                     margin=dict(l=0, r=0, t=30, b=60), 
                                     height=350,
                                     xaxis=dict(
+                                        range=[last_day, pd.Timestamp.now()],
                                         rangeselector=dict(
                                             buttons=list([
                                                 dict(count=1, label="1 Gün", step="day", stepmode="backward"),

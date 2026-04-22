@@ -5,6 +5,7 @@
 """
 
 import requests
+import cloudscraper
 from bs4 import BeautifulSoup
 import datetime
 import config
@@ -37,9 +38,17 @@ def ramleri_getir(url):
         dict: [TR] Ürün kodlarını detaylarıyla eşleştiren bir sözlük. / [EN] A dictionary mapping product codes (str) to their details (dict).
     """
     try:
-        response = requests.get(url, headers=config.HEADERS, timeout=10)
+        # [TR] Vatan Bilgisayar bot korumalarını aşmak için cloudscraper kullanıyoruz. / [EN] Use cloudscraper to bypass bot protections.
+        scraper = cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False})
+        response = scraper.get(url, timeout=15)
+        
+        # [TR] Status code 403 ise (Yasaklı), bu hala banlandığımız anlamına gelir.
+        if response.status_code == 403:
+            print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] HATA / ERROR: 403 Forbidden. IP adresiniz engellenmiş olabilir!")
+            return {}
+            
         response.raise_for_status()
-    except requests.RequestException as e:
+    except Exception as e:
         print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] HATA / ERROR: {e}")
         return {}
 
