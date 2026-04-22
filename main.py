@@ -75,8 +75,8 @@ def taramayi_baslat():
                                      f"<b>Fiyat / Price:</b> {fiyat} TL\n"
                                      f"<b>Stok / Stock:</b> {stok_durumu_metin}")
                             print(f"🚀 YENİ ÜRÜN / NEW PRODUCT: {isim} - {fiyat} TL")
-                            telegram_mesaj_gonder(mesaj, urun_url)
                             discord_mesaj_gonder("🚀 YENİ ÜRÜN SIRALAMAYA GİRDİ!", isim, None, fiyat, stok_durumu_metin, urun_url, resim_url, renk=5814783)
+                            telegram_mesaj_gonder(mesaj, urun_url)
                     islem_sayisi += 1
                     
                 # [TR] ZATEN BİLİNEN BİR ÜRÜN / [EN] ALREADY KNOWN PRODUCT
@@ -107,8 +107,8 @@ def taramayi_baslat():
                                      f"<b>Eski Base Fiyat / Old Base Price:</b> <s>{base_price} TL</s>\n"
                                      f"<b>Yeni Fiyat / New Price:</b> {fiyat} TL\n"
                                      f"<b>Stok / Stock:</b> {stok_durumu_metin}")
-                            telegram_mesaj_gonder(mesaj, kayitli_url)
                             discord_mesaj_gonder(f"🔥 BÜYÜK İNDİRİM! (%{indirim_orani:.1f})", isim, base_price, fiyat, stok_durumu_metin, kayitli_url, resim_url, renk=15158332)
+                            telegram_mesaj_gonder(mesaj, kayitli_url)
                             
                             update_base_price(kod, fiyat)
                             

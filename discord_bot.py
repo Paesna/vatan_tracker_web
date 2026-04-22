@@ -52,9 +52,8 @@ def discord_mesaj_gonder(baslik, urun_adi, eski_fiyat, yeni_fiyat, stok_durumu, 
 
     payload = {
         "embeds": [embed],
-        # [TR] Satın Al butonu Discord'da "Action Row" olarak sadece gerçek bot tokeniyle eklenebiliyor, 
-        # Webhook'ta buton desteklenmiyor. Bu yüzden linki mesaja da koyabiliriz.
-        "content": f"🛒 **Satın Al:** {url}"
+        # [TR] Linkin etrafına < > koyduk ki Discord kendi kendine Vatan'ın reklamını (OpenGraph embed) oluşturmasın.
+        "content": f"🛒 **Satın Al:** <{url}>"
     }
 
     try:
