@@ -57,8 +57,14 @@ def discord_mesaj_gonder(baslik, urun_adi, eski_fiyat, yeni_fiyat, stok_durumu, 
     }
 
     try:
+        print(f"🔍 [DEBUG] Discord Webhook URL başlangıcı: {webhook_url[:50]}...")
         r = requests.post(webhook_url, json=payload, timeout=10)
+        print(f"🔍 [DEBUG] Discord HTTP Status: {r.status_code}")
+        if r.status_code != 204:
+            print(f"🔍 [DEBUG] Discord Response Body: {r.text}")
         r.raise_for_status()
         print("✅ [TR] Discord bildirimi gönderildi. / [EN] Discord notification sent.")
     except Exception as e:
         print(f"❌ [TR] Discord bildirimi gönderilemedi / [EN] Failed to send Discord notification: {e}")
+        import traceback
+        traceback.print_exc()

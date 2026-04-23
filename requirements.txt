@@ -1,7 +1,7 @@
 requests==2.31.0
 beautifulsoup4==4.12.3
 SQLAlchemy==2.0.28
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.12
 streamlit==1.32.2
 pandas==2.2.1
 plotly==5.19.0
