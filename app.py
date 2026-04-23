@@ -2,6 +2,11 @@ import subprocess
 import time
 import os
 import sys
+from dotenv import load_dotenv
+
+# [TR] .env dosyasını oku, böylece RUN_MODE gibi değişkenler otomatik yüklenir.
+# [EN] Load .env file so variables like RUN_MODE are available without manual shell export.
+load_dotenv()
 
 def run_services():
     print("=== VATAN RAM TRACKER BAŞLATILIYOR ===")
