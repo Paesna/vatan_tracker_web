@@ -31,6 +31,33 @@ DB_URL = os.getenv("DB_URL", "")
 URL_ALL = "https://www.vatanbilgisayar.com/pc-bilgisayar-bellek-ram/?opf=p26559%2F&srt=UP"
 URL_STOCK = "https://www.vatanbilgisayar.com/pc-bilgisayar-bellek-ram/?opf=p26559%2F&srt=UP&stk=true"
 
+TEBILON_COOKIE = os.getenv("TEBILON_COOKIE", "")
+TEBILON_USER_AGENT = os.getenv("TEBILON_USER_AGENT", "")
+
+SOURCES = {
+    "vatan": {
+        "enabled": True,
+        "all_url": "https://www.vatanbilgisayar.com/pc-bilgisayar-bellek-ram/?opf=p26559%2F&srt=UP",
+        "stock_url": "https://www.vatanbilgisayar.com/pc-bilgisayar-bellek-ram/?opf=p26559%2F&srt=UP&stk=true",
+    },
+    "sinerji": {
+        "enabled": True,
+        "all_url": "https://www.sinerji.gen.tr/bellek-ram-c-2010?fx=bellek-turu:6238&sx=PriceAsc",
+        "stock_url": None,
+    },
+    "incehesap": {
+        "enabled": True,
+        "all_url": "https://www.incehesap.com/ram-fiyatlari/ozellik-4918/sirala-ucuz/",
+        "stock_url": None,
+    },
+    "tebilon": {
+        "enabled": True,
+        "all_url": "https://www.tebilon.com/bilgisayar-parcalari/ram/ddr5-ram/?o=far",
+        "stock_url": None,
+    }
+}
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 }
+

@@ -31,9 +31,17 @@ def telegram_mesaj_gonder(mesaj, buton_url=None):
     
     # [TR] Satıniçi Buton (Link) Ekleme / [EN] Add Inline Button (Link)
     if buton_url:
+        site_name = "Vatan"
+        if "sinerji" in buton_url:
+            site_name = "Sinerji"
+        elif "incehesap" in buton_url:
+            site_name = "İncehesap"
+        elif "tebilon" in buton_url:
+            site_name = "Tebilon"
+            
         payload["reply_markup"] = {
             "inline_keyboard": [
-                [{"text": "🛒 Vatan'da İncele / Satın Al", "url": buton_url}]
+                [{"text": f"🛒 {site_name}'de İncele / Satın Al", "url": buton_url}]
             ]
         }
         

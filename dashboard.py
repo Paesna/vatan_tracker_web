@@ -12,10 +12,10 @@ import datetime
 import config
 from database import get_last_scan
 
-st.set_page_config(page_title="Vatan RAM Tracker", page_icon="📈", layout="wide")
+st.set_page_config(page_title="RAM Fiyat Takip Paneli", page_icon="📈", layout="wide")
 
-st.title("🖥️ Vatan RAM Fiyat Takip Paneli")
-st.markdown("[TR] Veritabanına kaydedilen RAM fiyatlarının zamana göre değişim grafikleri. / [EN] Time-based charts of RAM prices saved in the database.")
+st.title("🖥️ RAM Fiyat Takip Paneli")
+st.markdown("[TR] Vatan, Sinerji, İncehesap ve Tebilon fiyat değişim grafikleri. / [EN] Price tracking charts for Vatan, Sinerji, İncehesap, and Tebilon.")
 
 # [TR] Sayfayı her 120 saniyede bir otomatik yenile / [EN] Auto-refresh page every 120 seconds
 count = st_autorefresh(interval=120000, key="datarefresh")
@@ -115,16 +115,32 @@ if engine:
                             st.image(img_url, use_column_width=True)
                         else:
                             # Placeholder image
-                            st.image("https://cdn.vatanbilgisayar.com/images/frontend/assets/placeHolder.gif", use_column_width=True)
+                            st.image("https://images.unsplash.com/photo-1591488320449-011701bb6704?q=80&w=300&auto=format&fit=crop", use_column_width=True)
                         
+                        # Determine source site name
+                        url_str = str(row['url'])
+                        if "sinerji.gen.tr" in url_str:
+                            site_name = "Sinerji"
+                            site_color = "#2E86C1" # Blueish
+                        elif "incehesap.com" in url_str:
+                            site_name = "İncehesap"
+                            site_color = "#E67E22" # Orange
+                        elif "tebilon.com" in url_str:
+                            site_name = "Tebilon"
+                            site_color = "#9B59B6" # Purple
+                        else:
+                            site_name = "Vatan"
+                            site_color = "#27AE60" # Green
+
                         # [TR] Ürün Adı (Kısaltılmış) / [EN] Product Name (Truncated)
                         name_display = row['name'] if len(row['name']) < 50 else row['name'][:47] + "..."
                         st.markdown(f"**[{name_display}]({row['url']})**")
                         
-                        # [TR] Fiyat ve Stok Gösterimi / [EN] Price and Stock Display
+                        # [TR] Fiyat, Stok ve Kaynak Gösterimi / [EN] Price, Stock, and Source Display
                         stock_color = "green" if row['in_stock'] == 1 else "red"
                         stock_text = "Stokta Var" if row['in_stock'] == 1 else "Stokta Yok"
-                        st.markdown(f"<h3 style='color: #FF4B4B; margin-bottom: 0px;'>{row['current_price']:,.2f} TL</h3>", unsafe_allow_html=True)
+                        st.markdown(f"<span style='background-color: {site_color}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold;'>{site_name}</span>", unsafe_allow_html=True)
+                        st.markdown(f"<h3 style='color: #FF4B4B; margin-top: 5px; margin-bottom: 0px;'>{row['current_price']:,.2f} TL</h3>", unsafe_allow_html=True)
                         st.markdown(f"<p style='color: {stock_color}; font-size: 14px;'>{stock_text}</p>", unsafe_allow_html=True)
                         
                         # [TR] Grafiği Gör Expander'ı / [EN] View Chart Expander

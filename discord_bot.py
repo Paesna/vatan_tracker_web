@@ -6,7 +6,7 @@
 import requests
 import config
 
-def discord_mesaj_gonder(baslik, urun_adi, eski_fiyat, yeni_fiyat, stok_durumu, url, resim_url=None, renk=5814783):
+def discord_mesaj_gonder(baslik, urun_adi, eski_fiyat, yeni_fiyat, stok_durumu, url, resim_url=None, renk=5814783, kaynak="Vatan Bilgisayar"):
     """
     [TR] Discord Webhook'una resimli bir "Embed" kartı gönderir. / [EN] Sends an image-rich "Embed" card to Discord Webhook.
     
@@ -19,6 +19,7 @@ def discord_mesaj_gonder(baslik, urun_adi, eski_fiyat, yeni_fiyat, stok_durumu, 
         url (str): [TR] Vatan Bilgisayar ürün linki
         resim_url (str): [TR] Ürünün görsel linki
         renk (int): [TR] Embed kartının solundaki çizginin rengi (Ondalık kod. Yeşil=5814783, Kırmızı=15158332)
+        kaynak (str): [TR] Ürünün çekildiği web sitesi adı (Vatan Bilgisayar, Sinerji vb.)
     """
     webhook_url = config.DISCORD_WEBHOOK_URL
     if not webhook_url:
@@ -38,11 +39,12 @@ def discord_mesaj_gonder(baslik, urun_adi, eski_fiyat, yeni_fiyat, stok_durumu, 
         "color": renk,
         "fields": [
             {"name": "Ürün / Product", "value": urun_adi, "inline": False},
+            {"name": "Kaynak / Source", "value": kaynak, "inline": True},
             {"name": "Fiyat / Price", "value": fiyat_metni, "inline": True},
             {"name": "Stok / Stock", "value": stok_durumu, "inline": True}
         ],
         "footer": {
-            "text": "Vatan RAM Tracker Bot"
+            "text": f"{kaynak} RAM Tracker"
         }
     }
 

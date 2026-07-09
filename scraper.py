@@ -8,6 +8,7 @@ import requests
 from curl_cffi import requests as curl_requests
 from bs4 import BeautifulSoup
 import datetime
+import json
 import config
 
 def fiyati_sayiya_cevir(fiyat_metni):
@@ -82,3 +83,206 @@ def ramleri_getir(url):
                 cekilen_urunler[kod] = {"isim": isim, "fiyat": fiyat, "url": href, "image_url": img_url}
                 
     return cekilen_urunler
+
+def scrape_sinerji(url):
+    """
+    [TR] Sinerji'den RAM ürünlerini çeker. / [EN] Fetches RAM products from Sinerji.
+    """
+    try:
+        response = curl_requests.get(url, impersonate="chrome110", timeout=15)
+        if response.status_code == 403:
+            print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Sinerji HATA: 403 Forbidden.")
+            return {}
+        response.raise_for_status()
+    except Exception as e:
+        print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Sinerji HATA: {e}")
+        return {}
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    product_articles = soup.select("article.product")
+    
+    cekilen_urunler = {}
+    for article in product_articles:
+        title_a = article.select_one(".title a")
+        if not title_a:
+            continue
+            
+        name = title_a.text.strip()
+        href = title_a.get("href", "")
+        if href and not href.startswith("http"):
+            href = "https://www.sinerji.gen.tr" + href
+            
+        sku_span = article.select_one(".title .sku")
+        if sku_span:
+            code = sku_span.text.replace("SKU:", "").strip()
+        else:
+            btn = article.select_one("button.addToCart")
+            if btn and btn.get("value"):
+                code = btn.get("value")
+            else:
+                code = href.split("-p-")[-1] if "-p-" in href else href.split("/")[-1]
+                
+        price_span = article.select_one("span.price")
+        out_of_stock = False
+        warning = article.select_one(".alert.alert-warning")
+        if warning and "yakında" in warning.text:
+            out_of_stock = True
+            
+        fiyat = None
+        if price_span and not out_of_stock:
+            fiyat_text = price_span.text.replace("₺", "").strip()
+            fiyat = fiyati_sayiya_cevir(fiyat_text)
+            
+        img_tag = article.select_one(".img img")
+        img_url = ""
+        if img_tag:
+            img_url = img_tag.get("src") or img_tag.get("data-src", "")
+            
+        if fiyat is not None:
+            cekilen_urunler[code] = {"isim": name, "fiyat": fiyat, "url": href, "image_url": img_url, "in_stock": not out_of_stock}
+            
+    return cekilen_urunler
+
+def scrape_incehesap(url):
+    """
+    [TR] İncehesap'tan RAM ürünlerini çeker. / [EN] Fetches RAM products from İncehesap.
+    """
+    try:
+        response = curl_requests.get(url, impersonate="chrome110", timeout=15)
+        if response.status_code == 403:
+            print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] İncehesap HATA: 403 Forbidden.")
+            return {}
+        response.raise_for_status()
+    except Exception as e:
+        print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] İncehesap HATA: {e}")
+        return {}
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    product_links = soup.find_all("a", class_=lambda x: x and any("product" in c for c in x.split()))
+    
+    cekilen_urunler = {}
+    for a in product_links:
+        data_product = a.get("data-product")
+        data_gaitem = a.get("data-gaitem")
+        if not data_product:
+            continue
+            
+        try:
+            prod_json = json.loads(data_product)
+            ga_json = json.loads(data_gaitem) if data_gaitem else {}
+        except Exception:
+            continue
+            
+        code = str(prod_json.get("id"))
+        if not code:
+            continue
+            
+        name = prod_json.get("name")
+        price = float(prod_json.get("price", 0))
+        
+        href = ga_json.get("url") or a.get("href", "")
+        if href and not href.startswith("http"):
+            href = "https://www.incehesap.com" + href
+            
+        img_url = ga_json.get("image")
+        if not img_url:
+            img_tag = a.find("img")
+            if img_tag:
+                img_url = img_tag.get("src") or img_tag.get("data-src", "")
+        if img_url and not img_url.startswith("http"):
+            img_url = "https://www.incehesap.com" + img_url
+            
+        in_stock = True
+        if "tükendi" in a.text.lower() or "stokta yok" in a.text.lower():
+            in_stock = False
+            
+        if price > 0:
+            cekilen_urunler[code] = {"isim": name, "fiyat": price, "url": href, "image_url": img_url, "in_stock": in_stock}
+            
+    return cekilen_urunler
+
+def scrape_tebilon(url):
+    """
+    [TR] Tebilon'dan RAM ürünlerini çeker. / [EN] Fetches RAM products from Tebilon.
+    """
+    headers = {}
+    if config.TEBILON_USER_AGENT:
+        headers["User-Agent"] = config.TEBILON_USER_AGENT
+    else:
+        headers["User-Agent"] = config.HEADERS["User-Agent"]
+        
+    if config.TEBILON_COOKIE:
+        headers["Cookie"] = config.TEBILON_COOKIE
+
+    try:
+        response = curl_requests.get(url, impersonate="chrome110", headers=headers, timeout=15)
+        if response.status_code == 403:
+            print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Tebilon HATA: 403 Forbidden. Cloudflare bypass cookie GEREKLİ!")
+            return {}
+        response.raise_for_status()
+    except Exception as e:
+        print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Tebilon HATA: {e}")
+        return {}
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    product_cards = soup.select(".showcase__product")
+    
+    cekilen_urunler = {}
+    for card in product_cards:
+        title_a = card.select_one(".showcase__title.desktopShow a")
+        if not title_a:
+            title_a = card.select_one(".showcase__image a.ajaxLink")
+            
+        if not title_a:
+            continue
+            
+        name = title_a.text.strip() or title_a.get("title", "").strip()
+        href = title_a.get("href", "")
+        if href and not href.startswith("http"):
+            href = "https://www.tebilon.com" + href
+            
+        sku_span = card.select_one(".showcase__image span")
+        if sku_span:
+            code = sku_span.text.strip()
+        else:
+            basket_btn = card.select_one(".add-basket")
+            if basket_btn and basket_btn.get("data-id"):
+                code = basket_btn.get("data-id")
+            else:
+                code = href.split("/")[-2] if href.endswith("/") else href.split("/")[-1]
+                
+        price_div = card.select_one(".newPrice")
+        fiyat = None
+        in_stock = False
+        if price_div:
+            price_text = price_div.text.replace("TL", "").strip()
+            fiyat = fiyati_sayiya_cevir(price_text)
+            if fiyat is not None and fiyat > 0:
+                in_stock = True
+                
+        img_tag = card.select_one(".showcase__image img.primaryImage")
+        img_url = ""
+        if img_tag:
+            img_url = img_tag.get("src") or img_tag.get("data-src", "")
+        if img_url and not img_url.startswith("http"):
+            img_url = "https://www.tebilon.com" + img_url
+            
+        if code and fiyat is not None:
+            cekilen_urunler[code] = {"isim": name, "fiyat": fiyat, "url": href, "image_url": img_url, "in_stock": in_stock}
+            
+    return cekilen_urunler
+
+def scrape_site(site_name, site_config):
+    """
+    [TR] Sitenin adına göre ilgili kazıma fonksiyonunu tetikler. / [EN] Triggers the relevant scraper based on the site name.
+    """
+    url = site_config["all_url"]
+    if site_name == "vatan":
+        return ramleri_getir(url)
+    elif site_name == "sinerji":
+        return scrape_sinerji(url)
+    elif site_name == "incehesap":
+        return scrape_incehesap(url)
+    elif site_name == "tebilon":
+        return scrape_tebilon(url)
+    return {}

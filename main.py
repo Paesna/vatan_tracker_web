@@ -12,7 +12,7 @@ import config
 from database import (init_db, is_db_empty, get_product_base, get_last_history, 
                       add_product, add_price_history, update_base_price, update_last_scan,
                       update_product_image)
-from scraper import ramleri_getir
+from scraper import scrape_site
 from telegram_bot import telegram_mesaj_gonder
 from discord_bot import discord_mesaj_gonder
 
@@ -39,8 +39,32 @@ def taramayi_baslat():
             
             ilk_calistirma = is_db_empty()
             
-            all_products = ramleri_getir(config.URL_ALL)
-            stock_products = ramleri_getir(config.URL_STOCK)
+            all_products = {}
+            stock_products = set()
+            
+            for site_name, site_config in config.SOURCES.items():
+                if not site_config.get("enabled", True):
+                    continue
+                
+                try:
+                    if site_name == "vatan":
+                        site_all = scrape_site("vatan", site_config)
+                        vatan_stock_config = {"all_url": site_config["stock_url"]}
+                        site_stock = scrape_site("vatan", vatan_stock_config)
+                        
+                        for kod, veri in site_all.items():
+                            all_products[kod] = veri
+                            if kod in site_stock:
+                                stock_products.add(kod)
+                    else:
+                        site_prods = scrape_site(site_name, site_config)
+                        for kod, veri in site_prods.items():
+                            unique_code = f"{site_name}-{kod}"
+                            all_products[unique_code] = veri
+                            if veri.get("in_stock", True):
+                                stock_products.add(unique_code)
+                except Exception as ex:
+                    print(f"❌ HATA / ERROR: {site_name.capitalize()} taranırken hata oluştu: {ex}")
             
             if not all_products:
                 print("[TR] Ürün bulunamadı, bekleniyor... / [EN] No products found, waiting...")
@@ -70,12 +94,21 @@ def taramayi_baslat():
                         print(f"✅ [İLK BASE OLUŞTURULDU / INITIAL BASE CREATED] {fiyat} TL - {isim}")
                     else:
                         if fiyat <= config.HEDEF_FIYAT:
+                            kaynak = "Vatan Bilgisayar"
+                            if "sinerji.gen.tr" in urun_url:
+                                kaynak = "Sinerji"
+                            elif "incehesap.com" in urun_url:
+                                kaynak = "İncehesap"
+                            elif "tebilon.com" in urun_url:
+                                kaynak = "Tebilon"
+                                
                             mesaj = (f"🟢 <b>YENİ ÜRÜN SIRALAMAYA GİRDİ! / NEW PRODUCT IN RANKING!</b>\n\n"
                                      f"<b>Ürün / Product:</b> {isim}\n"
+                                     f"<b>Kaynak / Source:</b> {kaynak}\n"
                                      f"<b>Fiyat / Price:</b> {fiyat} TL\n"
                                      f"<b>Stok / Stock:</b> {stok_durumu_metin}")
                             print(f"🚀 YENİ ÜRÜN / NEW PRODUCT: {isim} - {fiyat} TL")
-                            discord_mesaj_gonder("🚀 YENİ ÜRÜN SIRALAMAYA GİRDİ!", isim, None, fiyat, stok_durumu_metin, urun_url, resim_url, renk=5814783)
+                            discord_mesaj_gonder("🚀 YENİ ÜRÜN SIRALAMAYA GİRDİ!", isim, None, fiyat, stok_durumu_metin, urun_url, resim_url, renk=5814783, kaynak=kaynak)
                             telegram_mesaj_gonder(mesaj, urun_url)
                     islem_sayisi += 1
                     
@@ -101,13 +134,22 @@ def taramayi_baslat():
                         indirim_orani = ((base_price - fiyat) / base_price) * 100
                         
                         if indirim_orani >= config.INDIRIM_YUZDESI and fiyat <= config.HEDEF_FIYAT:
+                            kaynak = "Vatan Bilgisayar"
+                            if "sinerji.gen.tr" in kayitli_url:
+                                kaynak = "Sinerji"
+                            elif "incehesap.com" in kayitli_url:
+                                kaynak = "İncehesap"
+                            elif "tebilon.com" in kayitli_url:
+                                kaynak = "Tebilon"
+                                
                             print(f"🔥 BÜYÜK DÜŞÜŞ / BIG DROP: {isim} | {base_price} -> {fiyat} (%{indirim_orani:.1f})")
                             mesaj = (f"🔥 <b>BÜYÜK İNDİRİM! / BIG DISCOUNT! (%{indirim_orani:.1f})</b>\n\n"
                                      f"<b>Ürün / Product:</b> {isim}\n"
+                                     f"<b>Kaynak / Source:</b> {kaynak}\n"
                                      f"<b>Eski Base Fiyat / Old Base Price:</b> <s>{base_price} TL</s>\n"
                                      f"<b>Yeni Fiyat / New Price:</b> {fiyat} TL\n"
                                      f"<b>Stok / Stock:</b> {stok_durumu_metin}")
-                            discord_mesaj_gonder(f"🔥 BÜYÜK İNDİRİM! (%{indirim_orani:.1f})", isim, base_price, fiyat, stok_durumu_metin, kayitli_url, resim_url, renk=15158332)
+                            discord_mesaj_gonder(f"🔥 BÜYÜK İNDİRİM! (%{indirim_orani:.1f})", isim, base_price, fiyat, stok_durumu_metin, kayitli_url, resim_url, renk=15158332, kaynak=kaynak)
                             telegram_mesaj_gonder(mesaj, kayitli_url)
                             
                             update_base_price(kod, fiyat)
