@@ -101,6 +101,8 @@ def taramayi_baslat():
                                 kaynak = "İncehesap"
                             elif "tebilon.com" in urun_url:
                                 kaynak = "Tebilon"
+                            elif "itopya.com" in urun_url:
+                                kaynak = "Itopya"
                                 
                             mesaj = (f"🟢 <b>YENİ ÜRÜN SIRALAMAYA GİRDİ! / NEW PRODUCT IN RANKING!</b>\n\n"
                                      f"<b>Ürün / Product:</b> {isim}\n"
@@ -141,6 +143,8 @@ def taramayi_baslat():
                                 kaynak = "İncehesap"
                             elif "tebilon.com" in kayitli_url:
                                 kaynak = "Tebilon"
+                            elif "itopya.com" in kayitli_url:
+                                kaynak = "Itopya"
                                 
                             print(f"🔥 BÜYÜK DÜŞÜŞ / BIG DROP: {isim} | {base_price} -> {fiyat} (%{indirim_orani:.1f})")
                             mesaj = (f"🔥 <b>BÜYÜK İNDİRİM! / BIG DISCOUNT! (%{indirim_orani:.1f})</b>\n\n"

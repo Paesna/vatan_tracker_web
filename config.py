@@ -47,12 +47,17 @@ SOURCES = {
     },
     "incehesap": {
         "enabled": True,
-        "all_url": "https://www.incehesap.com/ram-fiyatlari/ozellik-4918/sirala-ucuz/",
+        "all_url": "https://www.incehesap.com/ram-fiyatlari/ozellik-4918,6917/sirala-ucuz/",
         "stock_url": None,
     },
     "tebilon": {
         "enabled": True,
         "all_url": "https://www.tebilon.com/bilgisayar-parcalari/ram/ddr5-ram/?o=far",
+        "stock_url": None,
+    },
+    "itopya": {
+        "enabled": True,
+        "all_url": "https://www.itopya.com/rambellek_k10?or=edf&ramtipi=ddr5-q5795",
         "stock_url": None,
     }
 }

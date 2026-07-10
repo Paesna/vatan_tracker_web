@@ -272,6 +272,72 @@ def scrape_tebilon(url):
             
     return cekilen_urunler
 
+def scrape_itopya(url):
+    """
+    [TR] Itopya'dan RAM ürünlerini çeker. / [EN] Fetches RAM products from Itopya.
+    """
+    try:
+        response = curl_requests.get(url, impersonate="chrome110", timeout=15)
+        if response.status_code == 403:
+            print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Itopya HATA: 403 Forbidden.")
+            return {}
+        response.raise_for_status()
+    except Exception as e:
+        print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Itopya HATA: {e}")
+        return {}
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    product_divs = soup.select(".product")
+    
+    cekilen_urunler = {}
+    for p in product_divs:
+        code = p.get("data-urun-id")
+        if not code:
+            continue
+            
+        title_a = p.select_one("a.title")
+        if not title_a:
+            continue
+            
+        name = title_a.text.strip()
+        href = title_a.get("href", "")
+        if href and not href.startswith("http"):
+            href = "https://www.itopya.com" + href
+            
+        img_tag = p.select_one(".product-image img.lozad")
+        img_url = ""
+        if img_tag:
+            img_url = img_tag.get("data-src") or img_tag.get("src", "")
+            if img_url and not img_url.startswith("http"):
+                img_url = "https://www.itopya.com" + img_url
+            
+        price_span = p.select_one(".product-price")
+        fiyat = None
+        if price_span:
+            # Check for basket discount price (Sepette fiyatı)
+            sepette_span = price_span.select_one(".product-price-warning")
+            if sepette_span:
+                price_text = sepette_span.text.lower().replace("sepette", "").replace("tl", "").replace("₺", "").strip()
+                fiyat = fiyati_sayiya_cevir(price_text)
+            else:
+                strong_tag = price_span.select_one("strong")
+                if strong_tag:
+                    price_text = strong_tag.text.lower().replace("tl", "").replace("₺", "").strip()
+                    fiyat = fiyati_sayiya_cevir(price_text)
+                else:
+                    price_text = price_span.text.lower().replace("tl", "").replace("₺", "").strip()
+                    fiyat = fiyati_sayiya_cevir(price_text)
+                    
+        in_stock = True
+        p_text_lower = p.text.lower()
+        if "tükendi" in p_text_lower or "stokta yok" in p_text_lower:
+            in_stock = False
+            
+        if code and fiyat is not None:
+            cekilen_urunler[code] = {"isim": name, "fiyat": fiyat, "url": href, "image_url": img_url, "in_stock": in_stock}
+            
+    return cekilen_urunler
+
 def scrape_site(site_name, site_config):
     """
     [TR] Sitenin adına göre ilgili kazıma fonksiyonunu tetikler. / [EN] Triggers the relevant scraper based on the site name.
@@ -285,4 +351,6 @@ def scrape_site(site_name, site_config):
         return scrape_incehesap(url)
     elif site_name == "tebilon":
         return scrape_tebilon(url)
+    elif site_name == "itopya":
+        return scrape_itopya(url)
     return {}

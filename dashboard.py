@@ -15,7 +15,7 @@ from database import get_last_scan
 st.set_page_config(page_title="RAM Fiyat Takip Paneli", page_icon="📈", layout="wide")
 
 st.title("🖥️ RAM Fiyat Takip Paneli")
-st.markdown("[TR] Vatan, Sinerji, İncehesap ve Tebilon fiyat değişim grafikleri. / [EN] Price tracking charts for Vatan, Sinerji, İncehesap, and Tebilon.")
+st.markdown("[TR] Vatan, Sinerji, İncehesap, Tebilon ve Itopya fiyat değişim grafikleri. / [EN] Price tracking charts for Vatan, Sinerji, İncehesap, Tebilon, and Itopya.")
 
 # [TR] Sayfayı her 120 saniyede bir otomatik yenile / [EN] Auto-refresh page every 120 seconds
 count = st_autorefresh(interval=120000, key="datarefresh")
@@ -128,6 +128,9 @@ if engine:
                         elif "tebilon.com" in url_str:
                             site_name = "Tebilon"
                             site_color = "#9B59B6" # Purple
+                        elif "itopya.com" in url_str:
+                            site_name = "Itopya"
+                            site_color = "#C0392B" # Dark Red
                         else:
                             site_name = "Vatan"
                             site_color = "#27AE60" # Green

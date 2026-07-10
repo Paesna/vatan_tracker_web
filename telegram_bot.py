@@ -38,6 +38,8 @@ def telegram_mesaj_gonder(mesaj, buton_url=None):
             site_name = "İncehesap"
         elif "tebilon" in buton_url:
             site_name = "Tebilon"
+        elif "itopya" in buton_url:
+            site_name = "Itopya"
             
         payload["reply_markup"] = {
             "inline_keyboard": [
