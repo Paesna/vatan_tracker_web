@@ -22,8 +22,8 @@ def discord_mesaj_gonder(baslik, urun_adi, eski_fiyat, yeni_fiyat, stok_durumu, 
         kaynak (str): [TR] Ürünün çekildiği web sitesi adı (Vatan Bilgisayar, Sinerji vb.)
     """
     webhook_url = config.DISCORD_WEBHOOK_URL
-    if not webhook_url:
-        # [TR] Eğer kullanıcı Webhook linki girmemişse işlemi sessizce atla. / [EN] Skip silently if no webhook url is provided.
+    if not webhook_url or webhook_url.startswith("your_") or not webhook_url.startswith("http"):
+        # [TR] Eğer kullanıcı Webhook linki girmemişse (veya placeholder ise) işlemi sessizce atla. / [EN] Skip silently if no webhook url is provided (or it is a placeholder).
         return
 
     # [TR] Fiyat metnini oluştur / [EN] Create price text

@@ -40,7 +40,14 @@ class SystemStatus(Base):
     last_scan = Column(DateTime)
 
 # [TR] Veritabanı motoru ve oturum oluşturucu / [EN] Database engine and session maker
-engine = create_engine(config.DB_URL)
+if config.DB_URL.startswith("sqlite"):
+    # [TR] Bot ve dashboard aynı SQLite dosyasını kullandığında kilitlenme hatalarını önlemek için bekleme süresi.
+    # [EN] Timeout to avoid "database is locked" errors when bot and dashboard share the same SQLite file.
+    engine = create_engine(config.DB_URL, connect_args={"timeout": 30})
+else:
+    # [TR] pool_pre_ping: 7/24 çalışırken sunucunun kapattığı bayat bağlantıları otomatik yeniler.
+    # [EN] pool_pre_ping: transparently replaces stale connections dropped by the server during 24/7 operation.
+    engine = create_engine(config.DB_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine)
 
 def init_db():
@@ -121,6 +128,11 @@ def add_price_history(code, price, in_stock):
         )
         session.add(new_history)
         session.commit()
+
+def get_all_product_codes():
+    """[TR] Veritabanındaki tüm ürün kodlarını getirir. / [EN] Fetches all product codes in the database."""
+    with SessionLocal() as session:
+        return [row[0] for row in session.query(Product.code).all()]
 
 def update_last_scan():
     """[TR] Son tarama zamanını günceller. / [EN] Updates the last scan time."""

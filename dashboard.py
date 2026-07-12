@@ -105,8 +105,10 @@ if engine:
             num_columns = 4
             cols = st.columns(num_columns)
             
-            for index, row in merged_df.iterrows():
-                col_idx = index % num_columns
+            # [TR] Sıralama sonrası DataFrame indeksleri karışık olduğundan grid için sıra numarası (enumerate) kullanılır.
+            # [EN] DataFrame labels are shuffled after sorting, so use the positional counter (enumerate) for the grid.
+            for sira, (index, row) in enumerate(merged_df.iterrows()):
+                col_idx = sira % num_columns
                 with cols[col_idx]:
                     with st.container(border=True):
                         # [TR] Ürün Resmi / [EN] Product Image

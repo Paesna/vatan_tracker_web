@@ -9,9 +9,9 @@ import datetime
 import sys
 
 import config
-from database import (init_db, is_db_empty, get_product_base, get_last_history, 
+from database import (init_db, is_db_empty, get_product_base, get_last_history,
                       add_product, add_price_history, update_base_price, update_last_scan,
-                      update_product_image)
+                      update_product_image, get_all_product_codes)
 from scraper import scrape_site
 from telegram_bot import telegram_mesaj_gonder
 from discord_bot import discord_mesaj_gonder
@@ -41,21 +41,25 @@ def taramayi_baslat():
             
             all_products = {}
             stock_products = set()
-            
+            # [TR] Site başına bu taramada bulunan ürün sayısı. 0 ise o sitenin taraması başarısız sayılır.
+            # [EN] Product count per site for this scan. 0 means that site's scrape is considered failed.
+            site_sonuclari = {}
+
             for site_name, site_config in config.SOURCES.items():
                 if not site_config.get("enabled", True):
                     continue
-                
+
                 try:
                     if site_name == "vatan":
                         site_all = scrape_site("vatan", site_config)
                         vatan_stock_config = {"all_url": site_config["stock_url"]}
                         site_stock = scrape_site("vatan", vatan_stock_config)
-                        
+
                         for kod, veri in site_all.items():
                             all_products[kod] = veri
                             if kod in site_stock:
                                 stock_products.add(kod)
+                        site_sonuclari[site_name] = len(site_all)
                     else:
                         site_prods = scrape_site(site_name, site_config)
                         for kod, veri in site_prods.items():
@@ -63,8 +67,13 @@ def taramayi_baslat():
                             all_products[unique_code] = veri
                             if veri.get("in_stock", True):
                                 stock_products.add(unique_code)
+                        site_sonuclari[site_name] = len(site_prods)
                 except Exception as ex:
                     print(f"❌ HATA / ERROR: {site_name.capitalize()} taranırken hata oluştu: {ex}")
+                    site_sonuclari[site_name] = 0
+
+                if site_sonuclari.get(site_name, 0) == 0:
+                    print(f"⚠️ UYARI / WARNING: {site_name.capitalize()} 0 ürün döndürdü. Site yapısı değişmiş veya erişim engellenmiş olabilir.")
             
             if not all_products:
                 print("[TR] Ürün bulunamadı, bekleniyor... / [EN] No products found, waiting...")
@@ -166,6 +175,32 @@ def taramayi_baslat():
                             print(f"📈 ARTIŞ (Base Güncellendi) / INCREASE (Base Updated): {isim} | {base_price} -> {fiyat}")
                         update_base_price(kod, fiyat)
             
+            # [TR] Bu taramada hiçbir listede görünmeyen ürünleri stok dışı işaretle (sitesi başarıyla tarandıysa).
+            # [EN] Mark products missing from this scan as out of stock (only if their site scraped successfully).
+            gorunmeyen_sayisi = 0
+            for kod in get_all_product_codes():
+                if kod in all_products:
+                    continue
+
+                urun_sitesi = "vatan"
+                for s in config.SOURCES:
+                    if s != "vatan" and kod.startswith(s + "-"):
+                        urun_sitesi = s
+                        break
+
+                # [TR] Sitesi bu tur taranamadıysa (0 ürün/hata/devre dışı) yanlış alarm vermemek için dokunma.
+                # [EN] Skip if the product's site failed this round (0 products/error/disabled) to avoid false alarms.
+                if site_sonuclari.get(urun_sitesi, 0) == 0:
+                    continue
+
+                son_kayit = get_last_history(kod)
+                if son_kayit and son_kayit["in_stock"] == 1:
+                    add_price_history(kod, son_kayit["price"], 0)
+                    gorunmeyen_sayisi += 1
+
+            if gorunmeyen_sayisi:
+                print(f"📦 [TR] {gorunmeyen_sayisi} ürün listelerde görünmediği için stok dışı işaretlendi. / [EN] {gorunmeyen_sayisi} products marked out of stock (missing from listings).")
+
             if ilk_calistirma:
                 print("\n✅ [TR] BULUT (CLOUD) VERİTABANI OLUŞTURULDU. / [EN] CLOUD DATABASE CREATED.")
                 print("[TR] Bundan sonraki tüm kıyaslamalar bu fiyatlara göre yapılacak. / [EN] All future comparisons will be based on these prices.")

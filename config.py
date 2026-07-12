@@ -27,6 +27,16 @@ DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
 # --- VERİTABANI AYARLARI / DATABASE SETTINGS ---
 DB_URL = os.getenv("DB_URL", "")
 
+# [TR] DB_URL boş veya placeholder ("your_...") ise proje klasöründe yerel SQLite dosyasına düş.
+# [EN] Fall back to a local SQLite file in the project folder if DB_URL is empty or a placeholder.
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if not DB_URL or DB_URL.startswith("your_"):
+    DB_URL = "sqlite:///" + os.path.join(_BASE_DIR, "ram_tracker.db").replace("\\", "/")
+elif DB_URL.startswith("postgres://"):
+    # [TR] SQLAlchemy 2.0 "postgres://" şemasını kabul etmez; Supabase/Render bazen bu formatta verir.
+    # [EN] SQLAlchemy 2.0 rejects the "postgres://" scheme; Supabase/Render sometimes provide it.
+    DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
+
 # --- WEB SCRAPING AYARLARI / WEB SCRAPING SETTINGS ---
 URL_ALL = "https://www.vatanbilgisayar.com/pc-bilgisayar-bellek-ram/?opf=p26559%2F&srt=UP"
 URL_STOCK = "https://www.vatanbilgisayar.com/pc-bilgisayar-bellek-ram/?opf=p26559%2F&srt=UP&stk=true"

@@ -85,15 +85,20 @@ python3 app.py
 ```
 vatan_tracker_web/
 ├── .env                 # Gizli ayarlar (Git'e yüklenmez)
+├── .env.example         # Ayar şablonu (.env olarak kopyalayın)
 ├── .gitignore           # Git'e yüklenmeyecek dosyalar
-├── app.py               # Ana başlatıcı (Orchestrator)
-├── config.py            # Merkezi ayar modülü (.env okuyucu)
+├── app.py               # Ana başlatıcı (Orchestrator, çöken servisi yeniden başlatır)
+├── config.py            # Merkezi ayar modülü (.env okuyucu, SQLite fallback)
 ├── main.py              # Fiyat takip botu (Scraper + Alert)
 ├── dashboard.py         # Streamlit Web Paneli
-├── database.py          # Supabase PostgreSQL ORM (SQLAlchemy)
-├── scraper.py           # Vatan Bilgisayar veri çekici
+├── database.py          # PostgreSQL/SQLite ORM (SQLAlchemy)
+├── scraper.py           # 5 site için veri çekici (Vatan, Sinerji, İncehesap, Tebilon, Itopya)
 ├── telegram_bot.py      # Telegram bildirim modülü
 ├── discord_bot.py       # Discord Webhook bildirim modülü
+├── cleanup_non_ram.py   # Yanlış kaydedilmiş RAM dışı ürünleri DB'den temizler
+├── deploy/
+│   ├── install_linux.sh     # Tek komutluk Linux systemd kurulumu
+│   └── ram-tracker.service  # systemd servis şablonu
 ├── requirements.txt     # Python bağımlılıkları
 └── README.md            # Bu dosya
 ```
@@ -125,61 +130,31 @@ git clone <github_repo_linkiniz>
 cd vatan_tracker_web
 ```
 
-#### Adım C: Sanal Ortam Oluşturup Bağımlılıkları Yükleyin
+#### Adım C: Otomatik Kurulum Betiğini Çalıştırın (Önerilen)
+Tek komutla sanal ortamı kurar, bağımlılıkları yükler, `.env` şablonunu oluşturur ve botu **systemd** servisi olarak kaydeder (bilgisayar yeniden başlasa bile bot otomatik açılır, çökerse 15 saniye içinde yeniden başlatılır):
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+bash deploy/install_linux.sh
 ```
 
-#### Adım D: `.env` Dosyasını Ayarlayın
-Proje klasöründe `.env` dosyasını oluşturun ve `RUN_MODE` değerini `BOT_ONLY` yapın:
-```env
-TELEGRAM_TOKEN=your_telegram_bot_token
-TELEGRAM_CHAT_ID=your_chat_id
-DISCORD_WEBHOOK_URL=your_discord_webhook_url
-DB_URL=your_supabase_postgresql_url
-RUN_MODE=BOT_ONLY
-TEBILON_COOKIE="kopyaladiginiz_cerez"
-TEBILON_USER_AGENT="kopyaladiginiz_user_agent"
-```
-
-#### Adım E: Botu Arka Plan Servisi (Systemd) Yapın
-Botun bilgisayarınız kapansa/açılsa dahi otomatik olarak arka planda çalışması için bir servis dosyası oluşturun:
+#### Adım D: `.env` Dosyasını Düzenleyin
+Kurulum betiği `.env.example` şablonundan bir `.env` oluşturur. Kendi değerlerinizi girin:
 ```bash
-sudo nano /etc/systemd/system/ram-tracker.service
+nano .env
+sudo systemctl restart ram-tracker   # ayar değişikliğinden sonra
 ```
-Açılan editöre aşağıdaki içeriği yapıştırın (**Kullanıcı adınızı ve klasör yollarını kendinize göre güncelleyin!**):
-```ini
-[Unit]
-Description=RAM Tracker Scraping Bot Service
-After=network.target
+- `DB_URL` **boş bırakılırsa** proje klasöründe yerel SQLite (`ram_tracker.db`) kullanılır — Supabase şart değildir.
+- `TELEGRAM_TOKEN` / `DISCORD_WEBHOOK_URL` boşsa o bildirim kanalı sessizce atlanır.
+- Her şey tek makinede çalışacaksa `RUN_MODE=ALL` yapın (bot + dashboard); dashboard'u Render'da barındırıyorsanız `BOT_ONLY` bırakın.
 
-[Service]
-Type=simple
-User=ubuntu
-WorkingDirectory=/home/ubuntu/vatan_tracker_web
-ExecStart=/home/ubuntu/vatan_tracker_web/venv/bin/python main.py
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-*Nano'dan kaydedip çıkmak için: `Ctrl + O`, `Enter`, `Ctrl + X`.*
-
-Servisi etkinleştirin ve başlatın:
+#### Adım E: Servisi Kontrol Edin
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable ram-tracker.service
-sudo systemctl start ram-tracker.service
+sudo systemctl status ram-tracker      # durum
+journalctl -u ram-tracker -f           # canlı log takibi
+sudo systemctl stop ram-tracker        # durdurma
 ```
 
-Durumunu kontrol etmek ve logları görmek için:
-```bash
-sudo systemctl status ram-tracker.service
-journalctl -u ram-tracker.service -f
-```
+> [!NOTE]
+> Elle kurulum yapmak isterseniz `deploy/ram-tracker.service` şablonundaki `__USER__` ve `__PROJECT_DIR__` alanlarını kendinize göre değiştirip `/etc/systemd/system/` altına kopyalamanız yeterlidir. Servis `app.py`'yi çalıştırır; `app.py` hem botu hem (RUN_MODE'a göre) dashboard'u yönetir ve çöken alt süreçleri otomatik yeniden başlatır.
 
 ---
 

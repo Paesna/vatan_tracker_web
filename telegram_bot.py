@@ -22,6 +22,11 @@ def telegram_mesaj_gonder(mesaj, buton_url=None):
         mesaj (str): [TR] HTML formatlı metin mesajı. / [EN] The HTML formatted text message.
         buton_url (str, optional): [TR] İsteğe bağlı bir URL. Verilirse, mesaja bir buton eklenir. / [EN] An optional URL. If provided, an inline button will be appended to the message.
     """
+    # [TR] Token veya Chat ID ayarlanmamışsa (ya da placeholder ise) işlemi sessizce atla. / [EN] Skip silently if token or chat id is not configured (or is a placeholder).
+    if (not config.TELEGRAM_TOKEN or not config.TELEGRAM_CHAT_ID
+            or config.TELEGRAM_TOKEN.startswith("your_") or str(config.TELEGRAM_CHAT_ID).startswith("your_")):
+        return
+
     url = f"https://api.telegram.org/bot{config.TELEGRAM_TOKEN}/sendMessage"
     payload = {
         "chat_id": config.TELEGRAM_CHAT_ID,

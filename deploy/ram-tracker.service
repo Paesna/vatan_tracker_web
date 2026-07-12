@@ -1,0 +1,16 @@
+[Unit]
+Description=RAM Tracker - Vatan/Sinerji/Incehesap/Tebilon/Itopya fiyat takip botu
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__PROJECT_DIR__
+ExecStart=__PROJECT_DIR__/venv/bin/python app.py
+Restart=always
+RestartSec=15
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

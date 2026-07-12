@@ -4,12 +4,23 @@
 [TR] Ürün kodlarını, isimlerini, fiyatlarını ve bağlantılarını çıkarmak için BeautifulSoup4 kullanır. / [EN] Uses BeautifulSoup4 to extract product codes, names, prices, and URLs.
 """
 
+import re
 import requests
 from curl_cffi import requests as curl_requests
 from bs4 import BeautifulSoup
 import datetime
 import json
 import config
+
+# [TR] Sitelerin kategori sayfalarındaki vitrin/kampanya blokları (monitör, kulaklık vb.) da ürün kartı
+#      işaretlemesi kullandığından, sadece isminde "DDR..." veya "RAM" kelimesi geçen ürünleri kabul ediyoruz.
+# [EN] Category pages contain promo/carousel blocks (monitors, headsets etc.) using the same product card
+#      markup, so we only accept products whose name contains the word "DDR..." or "RAM".
+RAM_DESEN = re.compile(r"\b(ddr\d*|ram)\b", re.IGNORECASE)
+
+def ram_urunu_mu(isim):
+    """[TR] Ürün isminin RAM ürününe ait olup olmadığını kontrol eder. / [EN] Checks whether a product name belongs to a RAM product."""
+    return bool(RAM_DESEN.search(isim or ""))
 
 def fiyati_sayiya_cevir(fiyat_metni):
     """
@@ -99,7 +110,12 @@ def scrape_sinerji(url):
         return {}
 
     soup = BeautifulSoup(response.text, "html.parser")
-    product_articles = soup.select("article.product")
+
+    # [TR] Sadece asıl ürün listesini (section.productList) tara; sayfa altındaki "size özel seçtiklerimiz"
+    #      bloğu (div.row.productList) monitör gibi alakasız ürünler içeriyor.
+    # [EN] Only scan the main listing (section.productList); the "picked for you" block at the bottom
+    #      (div.row.productList) contains unrelated products like monitors.
+    product_articles = soup.select("section.productList article.product") or soup.select("article.product")
     
     cekilen_urunler = {}
     for article in product_articles:
@@ -158,7 +174,13 @@ def scrape_incehesap(url):
         return {}
 
     soup = BeautifulSoup(response.text, "html.parser")
-    product_links = soup.find_all("a", class_=lambda x: x and any("product" in c for c in x.split()))
+
+    # [TR] Sadece asıl ürün listesini (#product-grid) tara; sayfadaki "popüler ürünler" karuselleri
+    #      monitör/kulaklık gibi alakasız ürünler içeriyor.
+    # [EN] Only scan the main listing (#product-grid); the page's "popular products" carousels
+    #      contain unrelated products like monitors/headsets.
+    kapsayici = soup.select_one("#product-grid") or soup
+    product_links = kapsayici.find_all("a", class_=lambda x: x and any("product" in c for c in x.split()))
     
     cekilen_urunler = {}
     for a in product_links:
@@ -344,13 +366,17 @@ def scrape_site(site_name, site_config):
     """
     url = site_config["all_url"]
     if site_name == "vatan":
-        return ramleri_getir(url)
+        urunler = ramleri_getir(url)
     elif site_name == "sinerji":
-        return scrape_sinerji(url)
+        urunler = scrape_sinerji(url)
     elif site_name == "incehesap":
-        return scrape_incehesap(url)
+        urunler = scrape_incehesap(url)
     elif site_name == "tebilon":
-        return scrape_tebilon(url)
+        urunler = scrape_tebilon(url)
     elif site_name == "itopya":
-        return scrape_itopya(url)
-    return {}
+        urunler = scrape_itopya(url)
+    else:
+        return {}
+
+    # [TR] RAM olmayan vitrin/kampanya ürünlerini ayıkla. / [EN] Filter out non-RAM promo/carousel products.
+    return {kod: veri for kod, veri in urunler.items() if ram_urunu_mu(veri.get("isim", ""))}

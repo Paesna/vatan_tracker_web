@@ -1,0 +1,5 @@
+# [TR] Linux'ta calisacak dosyalar her zaman LF satir sonu ile checkout edilsin.
+# [EN] Files that run on Linux must always be checked out with LF line endings.
+*.sh text eol=lf
+deploy/** text eol=lf
+*.py text
