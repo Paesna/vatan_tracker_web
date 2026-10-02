@@ -1,5 +1,5 @@
 [Unit]
-Description=RAM Tracker - Vatan/Sinerji/Incehesap/Tebilon/Itopya fiyat takip botu
+Description=Donanim Fiyat Takip - RAM/SSD/Anakart, 14 site (Vatan, Itopya, Incehesap, Amazon...)
 After=network-online.target
 Wants=network-online.target
 
@@ -11,6 +11,10 @@ ExecStart=__PROJECT_DIR__/venv/bin/python app.py
 Restart=always
 RestartSec=15
 Environment=PYTHONUNBUFFERED=1
+# [TR] Bot arka plan isidir; masaustu kullanimini yavaslatmasin. Cok sayida eszamanli baglanti icin dosya limiti.
+# [EN] The bot is background work; keep the desktop responsive. Raise the file limit for many connections.
+Nice=5
+LimitNOFILE=8192
 
 [Install]
 WantedBy=multi-user.target

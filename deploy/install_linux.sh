@@ -44,7 +44,7 @@ fi
 
 # 3) Hizli calisma testi / Quick smoke test
 echo "-> Hizli test: moduller yukleniyor..."
-"$PROJECT_DIR/venv/bin/python" -c "import config, scraper, database, main, telegram_bot, discord_bot" \
+"$PROJECT_DIR/venv/bin/python" -c "import config, categories, scraper, crawler, database, main, telegram_bot, discord_bot" \
     && echo "   OK: tum moduller sorunsuz yuklendi."
 
 # 4) systemd servisi / systemd service
@@ -66,3 +66,4 @@ echo "Durum / Status      : sudo systemctl status $SERVICE_NAME"
 echo "Canli log / Live log: journalctl -u $SERVICE_NAME -f"
 echo "Durdur / Stop       : sudo systemctl stop $SERVICE_NAME"
 echo "Dashboard           : http://localhost:8501  (RUN_MODE=ALL veya WEB_ONLY ise)"
+echo "Hiz olcumu          : $PROJECT_DIR/venv/bin/python benchmark.py   (canli siteler: --canli)"

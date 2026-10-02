@@ -25,7 +25,7 @@ def dashboard_komutu():
             f"--server.port={port}", "--server.address=0.0.0.0", "--server.headless=true"]
 
 def run_services():
-    print("=== VATAN RAM TRACKER BAŞLATILIYOR ===")
+    print("=== DONANIM FİYAT TAKİP (RAM + SSD + ANAKART) BAŞLATILIYOR ===")
     
     run_mode = os.getenv("RUN_MODE", "ALL").upper()
     print(f"Sistem Modu (RUN_MODE): {run_mode}")
